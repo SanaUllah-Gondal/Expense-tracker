@@ -78,7 +78,8 @@ Expense-tracker/
      `https://sanaullah-gondal.github.io/Expense-tracker`
 
 3. **Commit & push the new README**:
-```powershell
+```powershell<img width="1895" height="826" alt="Screenshot 2025-11-24 174707" src="https://github.com/user-attachments/assets/9c791046-e9a8-428a-b185-c0a40bda2471" />
+
 git add README.md
 git commit -m "docs: add professional README with features and setup"
 git push
