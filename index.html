@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Daily Expense Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #4361ee;
+      --success: #06d6a0;
+      --danger: #ef476f;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --gray: #6c757d;
+      --surface: #ffffff;
+      --border: #e9ecef;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f5f7ff 0%, #eef1ff 100%);
+      color: var(--dark);
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 1rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: 1.6rem;
+      background: linear-gradient(90deg, var(--primary), #3a0ca3);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--gray);
+      margin-top: 0.25rem;
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar (on desktop), hidden on mobile */
+    .sidebar {
+      width: 320px;
+      background: white;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    /* Mobile: stack vertically */
+    @media (max-width: 768px) {
+      .main { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        max-height: 40vh;
+      }
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    /* ===== FORM ===== */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 1rem;
+      background: #fafbff;
+      transition: border 0.2s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.875rem;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #3a56e0;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: rgba(67, 97, 238, 0.05);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: #e03e65;
+    }
+
+    /* ===== EXPENSE LIST ===== */
+    .list {
+      list-style: none;
+    }
+
+    .expense-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .expense-item:last-child {
+      border-bottom: none;
+    }
+
+    .expense-desc {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .expense-category {
+      font-size: 0.8rem;
+      color: var(--gray);
+    }
+
+    .expense-meta {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .expense-amount {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+
+    .expense-date {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-top: 0.25rem;
+    }
+
+    .expense-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--gray);
+    }
+
+    /* ===== CHARTS ===== */
+    .chart-container {
+      height: 280px;
+      margin-top: 1rem;
+      position: relative;
+    }
+
+    /* ===== UPGRADE + AD ===== */
+    .upgrade-banner {
+      background: linear-gradient(90deg, #e3f2fd, #bbdefb);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    .upgrade-banner strong {
+      color: var(--primary);
+    }
+
+    .upgrade-banner a {
+      color: var(--primary);
+      font-weight: 700;
+      text-decoration: none;
+      margin-left: 0.25rem;
+    }
+
+    .upgrade-banner a:hover {
+      text-decoration: underline;
+    }
+
+    .ad-banner {
+      background: #f8fafc;
+      text-align: center;
+      padding: 0.75rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: var(--gray);
+      margin-top: auto;
+      border: 1px dashed #cbd5e1;
+    }
+
+    /* ===== FOOTER (stats summary) ===== */
+    .summary-bar {
+      background: white;
+      padding: 0.75rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 500px) {
+      .summary-bar { flex-wrap: wrap; gap: 0.5rem; }
+    }
+
+    /* ===== FULL HEIGHT FIX ===== */
+    #expense-list {
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    #expense-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #expense-list::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="header-content">
+      <div>
+        <h1>💰 Daily Expense Tracker</h1>
+        <p class="subtitle">Secure • Private • No sign-up needed</p>
+      </div>
+      <div class="summary-bar" id="summary-bar">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <!-- SIDEBAR: Input + Stats -->
+    <aside class="sidebar">
+      <!-- Add Expense Form -->
+      <div class="card">
+        <h2>Add Expense</h2>
+        <div class="form-group">
+          <label for="desc">What was it for?</label>
+          <input type="text" id="desc" placeholder="Coffee, groceries, Uber..." autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="amount">Amount ($)</label>
+          <input type="number" id="amount" step="0.01" min="0.01" placeholder="12.50" />
+        </div>
+        <div class="form-group">
+          <label for="category">Category</label>
+          <select id="category">
+            <option value="food">🍔 Food & Dining</option>
+            <option value="transport">🚗 Transport</option>
+            <option value="shopping">🛍️ Shopping</option>
+            <option value="utilities">⚡ Utilities</option>
+            <option value="entertainment">🎮 Entertainment</option>
+            <option value="health">💊 Health</option>
+            <option value="other">📦 Other</option>
+          </select>
+        </div>
+        <button id="add-btn">➕ Add Expense</button>
+      </div>
+
+      <!-- Upgrade Banner -->
+      <div class="upgrade-banner">
+        🔓 <strong>Premium:</strong> Export PDF • Custom Categories • Monthly Reports
+        <a href="#" id="unlock-btn">Unlock for $4.99</a>
+      </div>
+
+      <!-- Ad Banner -->
+      <div class="ad-banner">
+        📢 Sponsored: <strong>BudgetBuddy Pro</strong> — AI saving tips for smart spenders!
+      </div>
+    </aside>
+
+    <!-- CONTENT: List + Charts -->
+    <main class="content">
+      <div class="card">
+        <h2>Recent Expenses</h2>
+        <ul id="expense-list" class="list"></ul>
+        <div id="empty-state" class="empty-state">
+          <p>🕗 No expenses yet.</p>
+          <p style="margin-top:0.5rem;font-size:0.9rem;color:#6c757d">Add your first one using the form on the left.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Spending Insights</h2>
+        <div class="chart-container">
+          <canvas id="categoryChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="dailyChart"></canvas>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // =============== DATA ===============
+    let expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+
+    // DOM
+    const descInput = document.getElementById('desc');
+    const amountInput = document.getElementById('amount');
+    const categorySelect = document.getElementById('category');
+    const addBtn = document.getElementById('add-btn');
+    const expenseList = document.getElementById('expense-list');
+    const emptyState = document.getElementById('empty-state');
+    const summaryBar = document.getElementById('summary-bar');
+
+    // Charts
+    let categoryChart, dailyChart;
+
+    // =============== UTILS ===============
+    function formatCurrency(n) {
+      return '$' + parseFloat(n).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+    function updateSummary() {
+      const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      const count = expenses.length;
+      const today = new Date().toISOString().split('T')[0];
+      const todayTotal = expenses
+        .filter(e => e.date.startsWith(today))
+        .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+      summaryBar.innerHTML = `
+        <div>Total: <strong>${formatCurrency(total)}</strong></div>
+        <div>Today: <strong>${formatCurrency(todayTotal)}</strong></div>
+        <div>Entries: <strong>${count}</strong></div>
+      `;
+    }
+
+    // =============== CHARTS ===============
+    function initCharts() {
+      const ctx1 = document.getElementById('categoryChart').getContext('2d');
+      const ctx2 = document.getElementById('dailyChart').getContext('2t');
+
+      if (categoryChart) categoryChart.destroy();
+      if (dailyChart) dailyChart.destroy();
+
+      // Category Chart
+      const catData = getCategoryData();
+      categoryChart = new Chart(ctx1, {
+        type: 'doughnut',
+        data: catData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right' },
+            title: { display: true, text: 'Spending by Category', font: { size: 14 } }
+          },
+          cutout: '60%'
+        }
+      });
+
+      // Daily Chart
+      const dailyData = getDailyData();
+      dailyChart = new Chart(ctx2, {
+        type: 'bar',
+        data: dailyData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Daily Spending (Last 7 Days)', font: { size: 14 } }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function getCategoryData() {
+      const totals = {};
+      expenses.forEach(e => {
+        totals[e.category] = (totals[e.category] || 0) + parseFloat(e.amount);
+      });
+
+      const labels = Object.keys(totals);
+      const data = Object.values(totals);
+      const bgColors = [
+        '#4361ee', '#3f37c9', '#4895ef', '#4cc9f0',
+        '#f72585', '#b5179e', '#7209b7', '#560bad'
+      ];
+
+      return {
+        labels: labels.map(l => ({
+          'food': '🍔 Food',
+          'transport': '🚗 Transport',
+          'shopping': '🛍️ Shopping',
+          'utilities': '⚡ Utilities',
+          'entertainment': '🎮 Entertainment',
+          'health': '💊 Health',
+          'other': '📦 Other'
+        }[l] || l)),
+        datasets: [{
+          data: data,
+          backgroundColor: bgColors.slice(0, labels.length),
+          borderWidth: 0
+        }]
+      };
+    }
+
+    function getDailyData() {
+      const days = [];
+      const today = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        days.push(d.toISOString().split('T')[0]);
+      }
+
+      const daily = {};
+      days.forEach(day => daily[day] = 0);
+      expenses.forEach(e => {
+        const d = e.date.split('T')[0];
+        if (daily[d] !== undefined) daily[d] += parseFloat(e.amount);
+      });
+
+      return {
+        labels: days.map(d => new Date(d).toLocaleDateString('en-US', { weekday: 'short' })),
+        datasets: [{
+          label: 'Amount ($)',
+          data: days.map(d => daily[d]),
+          backgroundColor: 'rgba(67, 97, 238, 0.7)',
+          borderColor: 'rgba(67, 97, 238, 1)',
+          borderWidth: 1,
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      };
+    }
+
+    // =============== RENDER ===============
+    function renderExpenses() {
+      if (expenses.length === 0) {
+        emptyState.style.display = 'block';
+        expenseList.innerHTML = '';
+      } else {
+        emptyState.style.display = 'none';
+        expenseList.innerHTML = expenses
+          .map((e, i) => `
+            <li class="expense-item">
+              <div>
+                <div class="expense-desc">${e.desc}</div>
+                <div class="expense-category">${{
+                  'food': '🍔 Food',
+                  'transport': '🚗 Transport',
+                  'shopping': '🛍️ Shopping',
+                  'utilities': '⚡ Utilities',
+                  'entertainment': '🎮 Entertainment',
+                  'health': '💊 Health',
+                  'other': '📦 Other'
+                }[e.category]}</div>
+              </div>
+              <div class="expense-meta">
+                <div class="expense-amount">${formatCurrency(e.amount)}</div>
+                <div class="expense-date">${new Date(e.date).toLocaleDateString()}</div>
+                <div class="expense-actions">
+                  <button class="btn-outline" onclick="editExpense(${i})">✏️</button>
+                  <button class="btn-danger" onclick="deleteExpense(${i})">🗑️</button>
+                </div>
+              </div>
+            </li>
+          `).join('');
+      }
+      updateSummary();
+    }
+
+    function save() {
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+      renderExpenses();
+      initCharts();
+    }
+
+    // =============== HANDLERS ===============
+    addBtn.addEventListener('click', () => {
+      const desc = descInput.value.trim();
+      const amount = amountInput.value.trim();
+      if (!desc || !amount) return alert('Please enter description and amount.');
+      
+      expenses.unshift({
+        desc,
+        amount: parseFloat(amount),
+        category: categorySelect.value,
+        date: new Date().toISOString()
+      });
+      save();
+      
+      descInput.value = '';
+      amountInput.value = '';
+      descInput.focus();
+    });
+
+    window.deleteExpense = function(i) {
+      if (confirm('Delete this expense?')) {
+        expenses.splice(i, 1);
+        save();
+      }
+    };
+
+    window.editExpense = function(i) {
+      const e = expenses[i];
+      descInput.value = e.desc;
+      amountInput.value = e.amount;
+      categorySelect.value = e.category;
+      expenses.splice(i, 1);
+      save();
+      descInput.focus();
+    };
+
+    // =============== INIT ===============
+    document.getElementById('unlock-btn').addEventListener('click', e => {
+      e.preventDefault();
+      if (confirm('✨ Unlock Premium Features?\n\n- Export to PDF\n- Custom Categories\n- Monthly Reports\n\nOne-time $4.99')) {
+        alert('✅ Premium unlocked! (In production: Stripe integration)');
+        // localStorage.setItem('premium', 'true');
+      }
+    });
+
+    renderExpenses();
+    initCharts();
+
+    // Focus first input
+    descInput.focus();
+
+    // Handle Enter key
+    descInput.addEventListener('keypress', e => e.key === 'Enter' && amountInput.focus());
+    amountInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') addBtn.click();
+    });
+  </script>
+</body>
+</html>
